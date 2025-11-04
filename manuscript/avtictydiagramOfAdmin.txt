@@ -1,0 +1,18 @@
+@startuml
+start
+:Login to Admin Panel;
+if (Is Valid?) then (Yes)
+  :View Dashboard;
+  :Check New Listings;
+  if (Approve?) then (Yes)
+    :Check User Report;
+    :Manage User;
+  else (No)
+    :Recheck New Listings;
+  endif
+else (No)
+  :Display Error Message;
+  :Return to Login Page;
+endif
+stop
+@enduml

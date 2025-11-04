@@ -1,0 +1,24 @@
+@startuml
+start
+:Sign up or Login;
+if (Is Valid?) then (Yes)
+  :Browse Items (Buy/Rent);
+  :Select Item;
+  :Message Seller;
+  if (Choose Buy or Rent?) then (Buy)
+    :Click Buy Now;
+    :Upload Payment Proof;
+    :Seller Confirm Purchase;
+  else (Rent)
+    :Agree to Rental Terms;
+    :Upload Proof Rental Payment;
+    :Seller Confirm Rental;
+    :Return Item to Seller;
+  endif
+  :Rate Transaction;
+else (No)
+  :Display Error Message;
+  :Return to Login Page;
+endif
+stop
+@enduml

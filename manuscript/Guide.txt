@@ -1,0 +1,17 @@
+Objectives of Study
+- General Objective
+The primary objective of this study is to design and develop ShopLendr, a comprehensive digital platform that allows users to shop for items and borrow products from other users, promoting accessibility, sustainability, and community sharing, exclusively for University of Antique college students, enabling them to buy, sell, and rent items instantly within their campus community.
+
+-Specific Objectives
+Specifically, this study aims to:
+1.	To design and develop a mobile application that allows users to browse, list, borrow, and lend items within a user-friendly interface.
+2.	To implement a secure mobile-based user registration and login system with options for account verification and profile customization.
+3.	To create a mobile item listing feature where users can upload item images, descriptions, categories, availability dates, and conditions.
+4.	To develop a borrowing request system that allows users to request items, communicate with lenders, and track approval or decline status.
+5.	To evaluate the usability, functionality, and performance of the mobile application based on ISO/IEC 25010 software quality standards.
+
+Scope and Delimitation of the Study
+This study centers on the development and implementation of ShopLendr, a mobile application designed exclusively for students of the University of Antique. The app aims to create a secure and accessible digital marketplace where students can buy, sell, and rent items within their university community.
+To ensure a safe and student-only environment, user registration will require Gmail verification and the submission of a valid University of Antique student ID, which will be authenticated using an image recognition system. This helps maintain the integrity of the platform by allowing only verified students to participate.
+ShopLendr will offer students the freedom to post items without the need for admin approval, enabling a seamless and efficient listing process. Key features include real-time filtering for sale and rental categories, as well as an in-app messaging system that supports direct communication between users. For rentals, a product insurance agreement will be implemented to establish terms and reduce risk between parties. The application will also enforce a data security policy to protect users’ private information and ensure compliance with privacy standards.
+This study acknowledges certain delimitations. ShopLendr will not process payments directly. All transactions must be independently confirmed between the renter and the item owner. Users will be responsible for uploading proof of payment, such as screenshots, and for arranging delivery or meet-ups on their own. Furthermore, the platform is strictly limited to student-to-student transactions, excluding business vendors and third-party sellers. Advanced AI features and fraud detection systems are also not included in the initial version of the applicatio

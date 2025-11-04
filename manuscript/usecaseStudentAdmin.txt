@@ -1,0 +1,39 @@
+@startuml
+left to right direction
+
+actor "Student User" as Student
+actor "Admin" as Admin
+
+rectangle "ShopLendr App" {
+    (Register Account) as UC1
+    (Login) as UC2
+    (List item for Sale/Rent) as UC3
+    (Manage Listings) as UC4
+    (Negotiate/Confirm Transaction) as UC5
+    (Upload Payment Proof) as UC6
+
+    (Manage User Account) as UC7
+    (Approve/Remove Listings) as UC8
+    (Monitor Transactions) as UC9
+    (View Reports) as UC10
+    (Suspend/Activate Users) as UC11
+    (Moderate Reviews/Chats) as UC12
+}
+
+' Student User interactions
+Student --> UC1
+Student --> UC2
+Student --> UC3
+Student --> UC4
+Student --> UC5
+Student --> UC6
+
+' Admin interactions
+Admin --> UC7
+Admin --> UC8
+Admin --> UC9
+Admin --> UC10
+Admin --> UC11
+Admin --> UC12
+
+@enduml

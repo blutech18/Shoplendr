@@ -1,0 +1,235 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isProductOwner(productData) {
+      return isAuthenticated() && 
+             productData.OwnerRef == /databases/$(database)/documents/Users/$(request.auth.uid);
+    }
+    
+    // Note: Since AdminUsers uses custom document IDs (not user UIDs),
+    // we cannot efficiently check admin status in security rules without
+    // querying the collection. For now, we'll allow authenticated users
+    // to update moderation queue and rely on client-side admin checks.
+    // In production, use Cloud Functions or custom claims for better security.
+    function isAdmin() {
+      return isAuthenticated();
+    }
+    
+    function isValidProduct() {
+      return request.resource.data.name is string &&
+             request.resource.data.name.size() > 0 &&
+             request.resource.data.name.size() <= 100 &&
+             request.resource.data.description is string &&
+             request.resource.data.description.size() > 0 &&
+             request.resource.data.description.size() <= 1000 &&
+             request.resource.data.price is number &&
+             request.resource.data.price >= 0 &&
+             request.resource.data.price <= 1000000 &&
+             request.resource.data.SellRent is string &&
+             request.resource.data.SellRent in ['Sell', 'Rent', 'sell', 'rent'] &&
+             request.resource.data.Catergories is string &&
+             request.resource.data.Condition is string;
+    }
+    
+    function isValidUser() {
+      return request.resource.data.display_name is string &&
+             request.resource.data.display_name.size() > 0 &&
+             request.resource.data.display_name.size() <= 50;
+    }
+    
+    // Users collection
+    match /Users/{userId} {
+      allow create: if isOwner(userId) && isValidUser();
+      allow read: if isAuthenticated();
+      allow update: if isOwner(userId) && isValidUser() || isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // Products collection
+    match /Products/{productId} {
+      allow create: if isAuthenticated() && 
+                      isValidProduct() &&
+                      request.resource.data.OwnerRef == /databases/$(database)/documents/Users/$(request.auth.uid);
+      allow read: if true;
+      allow update: if isAuthenticated() && 
+                      (isProductOwner(resource.data) || isAdmin()) &&
+                      isValidProduct();
+      allow delete: if isAuthenticated() && (isProductOwner(resource.data) || isAdmin());
+    }
+
+    // Messages collection - TEMPORARILY PERMISSIVE FOR TESTING
+    match /messages/{messageId} {
+      allow create, read, update, delete: if isAuthenticated();
+      
+      // Chats subcollection
+      match /chats/{chatId} {
+        allow create, read, update, delete: if isAuthenticated();
+      }
+    }
+
+    // Global read access for chats (for queries)
+    match /{path=**}/chats/{chatId} {
+      allow read: if isAuthenticated();
+    }
+
+    // Global read access for messages (for queries)
+    match /{path=**}/messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow list: if isAuthenticated();
+    }
+
+    // Carts collection
+    match /Carts/{cartId} {
+      allow create: if isAuthenticated() &&
+                      request.resource.data.userRef == /databases/$(database)/documents/Users/$(request.auth.uid);
+      allow read: if isAuthenticated() &&
+                    resource.data.userRef == /databases/$(database)/documents/Users/$(request.auth.uid);
+      allow update: if isAuthenticated() &&
+                      resource.data.userRef == /databases/$(database)/documents/Users/$(request.auth.uid);
+      allow delete: if isAuthenticated() &&
+                      resource.data.userRef == /databases/$(database)/documents/Users/$(request.auth.uid);
+    }
+
+    // Shop offers collection (admin-only write, public read)
+    match /shop_offers/{offerId} {
+      allow create: if false; // Reserved for admin/cloud functions
+      allow read: if true;
+      allow update: if false; // Reserved for admin/cloud functions
+      allow delete: if false;
+    }
+
+    // Shop listview collection (admin-only write, public read)
+    match /shop_listview/{listId} {
+      allow create: if false; // Reserved for admin/cloud functions
+      allow read: if true;
+      allow update: if false; // Reserved for admin/cloud functions
+      allow delete: if false;
+    }
+
+    // Categories collection
+    match /Categories/{categoryId} {
+      allow create: if false; // Reserved for admin/cloud functions
+      allow read: if true;
+      allow update: if false; // Reserved for admin/cloud functions
+      allow delete: if false;
+    }
+
+    // Reviews collection
+    match /Reviews/{reviewId} {
+      allow create: if isAuthenticated() &&
+                      request.resource.data.reviewer_ref == /databases/$(database)/documents/Users/$(request.auth.uid) &&
+                      request.resource.data.rating is number &&
+                      request.resource.data.rating >= 1 &&
+                      request.resource.data.rating <= 5 &&
+                      request.resource.data.comment is string &&
+                      request.resource.data.comment.size() <= 1000;
+      allow read: if true;
+      allow update: if isAuthenticated() &&
+                      (resource.data.reviewer_ref == /databases/$(database)/documents/Users/$(request.auth.uid) || isAdmin()) &&
+                      request.resource.data.rating is number &&
+                      request.resource.data.rating >= 1 &&
+                      request.resource.data.rating <= 5 &&
+                      request.resource.data.comment is string &&
+                      request.resource.data.comment.size() <= 1000;
+      allow delete: if isAuthenticated() &&
+                      (resource.data.reviewer_ref == /databases/$(database)/documents/Users/$(request.auth.uid) || isAdmin());
+    }
+
+    // Admin Users collection
+    match /AdminUsers/{adminId} {
+      allow read: if isAuthenticated();
+      allow create: if false; // Only via Cloud Functions
+      allow update: if false; // Only via Cloud Functions
+      allow delete: if false;
+    }
+
+    // Moderation Queue collection
+    match /ModerationQueue/{queueId} {
+      allow create: if isAuthenticated() &&
+                      request.resource.data.reporter_ref == /databases/$(database)/documents/Users/$(request.auth.uid);
+      allow read: if isAuthenticated();
+      allow update: if isAdmin(); // Allow admins to review and update
+      allow delete: if isAdmin();
+    }
+
+    // Admin Logs collection (read-only for admins)
+    match /AdminLogs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin(); // Allow admins to create logs
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // Analytics collection (admin-only read)
+    match /Analytics/{analyticsId} {
+      allow read: if false; // Only via Cloud Functions/Admin SDK
+      allow create: if true; // Allow app to log events
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // Notifications collection
+    match /Notifications/{notificationId} {
+      allow create: if false; // Only via Cloud Functions
+      allow read: if isAuthenticated() &&
+                    resource.data.recipient_ref == /databases/$(database)/documents/Users/$(request.auth.uid);
+      allow update: if isAuthenticated() &&
+                      resource.data.recipient_ref == /databases/$(database)/documents/Users/$(request.auth.uid);
+      allow delete: if isAuthenticated() &&
+                      resource.data.recipient_ref == /databases/$(database)/documents/Users/$(request.auth.uid);
+    }
+
+    // Rental Requests collection
+    match /RentalRequests/{requestId} {
+      allow create: if isAuthenticated() &&
+                      request.resource.data.requesterRef == /databases/$(database)/documents/Users/$(request.auth.uid) &&
+                      request.resource.data.status == 'pending' &&
+                      request.resource.data.insuranceAgreed == true;
+      allow read: if isAuthenticated();
+      allow update: if isAuthenticated() &&
+                      (resource.data.ownerRef == /databases/$(database)/documents/Users/$(request.auth.uid) ||
+                       resource.data.requesterRef == /databases/$(database)/documents/Users/$(request.auth.uid) ||
+                       isAdmin());
+      allow delete: if isAuthenticated() &&
+                      (resource.data.requesterRef == /databases/$(database)/documents/Users/$(request.auth.uid) ||
+                       isAdmin()) &&
+                      (resource.data.status == 'pending' || isAdmin());
+    }
+
+    // Insurance Agreements collection
+    match /InsuranceAgreements/{agreementId} {
+      allow create: if isAuthenticated() &&
+                      request.resource.data.userRef == /databases/$(database)/documents/Users/$(request.auth.uid);
+      allow read: if isAuthenticated() &&
+                    resource.data.userRef == /databases/$(database)/documents/Users/$(request.auth.uid);
+      allow update: if false; // Immutable once created
+      allow delete: if false; // Cannot delete agreements
+    }
+
+    // Purchase Requests collection
+    match /PurchaseRequests/{requestId} {
+      allow create: if isAuthenticated() &&
+                      request.resource.data.buyerRef == /databases/$(database)/documents/Users/$(request.auth.uid) &&
+                      request.resource.data.status == 'pending';
+      allow read: if isAuthenticated();
+      allow update: if isAuthenticated() &&
+                      (resource.data.sellerRef == /databases/$(database)/documents/Users/$(request.auth.uid) ||
+                       resource.data.buyerRef == /databases/$(database)/documents/Users/$(request.auth.uid) ||
+                       isAdmin());
+      allow delete: if isAuthenticated() &&
+                      (resource.data.buyerRef == /databases/$(database)/documents/Users/$(request.auth.uid) ||
+                       isAdmin()) &&
+                      (resource.data.status == 'pending' || isAdmin());
+    }
+  }
+}
